@@ -7,25 +7,20 @@ mod utils;
 
 use core::sync::atomic::Ordering;
 use embassy_time::{Duration, Timer};
-use esp_hal::{gpio::OutputPin, peripheral::Peripheral, rmt::Rmt};
-use esp_hal_smartled::SmartLedsAdapter;
 use smart_leds_trait::SmartLedsWrite;
 
 use crate::{
     settings::PresetSettings, LedsAdapter, Result, FRAME_TIME_MS, LED_COUNT, SETTINGS,
-    SHOULD_UPDATE, SMART_LEDS_BUFFER_SIZE,
+    SHOULD_UPDATE,
 };
 
 trait Preset {
     async fn run(leds: &mut LedsAdapter, preset_settings: &PresetSettings) -> Result<()>;
 }
 
-pub async fn run_renderer(
-    rmt: Rmt<'_, esp_hal::Blocking>,
-    pin: impl Peripheral<P = impl OutputPin>,
-) {
-    let rmt_buffer = [0u32; SMART_LEDS_BUFFER_SIZE];
-    let mut leds = SmartLedsAdapter::new(rmt.channel0, pin, rmt_buffer);
+pub async fn run_renderer(mut leds: LedsAdapter) {
+    // let rmt_buffer = [0u32; SMART_LEDS_BUFFER_SIZE];
+    // let mut leds = SmartLedsAdapter::new(rmt.channel0, pin, rmt_buffer);
 
     loop {
         SHOULD_UPDATE.store(false, Ordering::Relaxed);

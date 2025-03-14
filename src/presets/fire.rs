@@ -38,7 +38,7 @@ impl Preset for FirePreset {
             time = time.wrapping_add(preset_settings.speed as u16);
 
             leds.write(strip.into_iter())
-                .map_err(Error::LedAdapterWriteError)?;
+                .map_err(|_| Error::LedAdapterWriteError)?;
 
             if SHOULD_UPDATE.load(Ordering::Relaxed) {
                 return Ok(());

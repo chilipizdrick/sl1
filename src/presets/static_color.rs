@@ -21,7 +21,7 @@ impl Preset for StaticColorPreset {
 
         loop {
             leds.write([color; LED_COUNT].into_iter())
-                .map_err(Error::LedAdapterWriteError)?;
+                .map_err(|_| Error::LedAdapterWriteError)?;
 
             if SHOULD_UPDATE.load(Ordering::Relaxed) {
                 return Ok(());

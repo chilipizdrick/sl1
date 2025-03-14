@@ -1,10 +1,8 @@
-use esp_hal_smartled::LedAdapterError;
-
 #[derive(Debug)]
 pub enum Error {
     PresetIdOutOfBounds,
     UnableToLockMutex,
-    LedAdapterWriteError(LedAdapterError),
+    LedAdapterWriteError,
     UnsupportedClientMessageMethod,
     InvalidProtocolVersion,
     UnsupportedProtocolVersion,

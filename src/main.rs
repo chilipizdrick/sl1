@@ -14,7 +14,13 @@ use embassy_executor::Spawner;
 use embassy_net::StackResources;
 use embassy_sync::lazy_lock::LazyLock;
 use esp_backtrace as _;
-use esp_hal::{clock::CpuClock, rmt::Rmt, spi::master::Config, time::RateExtU32};
+use esp_hal::{
+    clock::CpuClock,
+    dma::{DmaRxBuf, DmaTxBuf},
+    dma_descriptors,
+    spi::master::{Config, Spi, SpiDmaBus},
+    time::RateExtU32,
+};
 use esp_println::dbg;
 use esp_storage::FlashStorage;
 use esp_wifi::{
@@ -83,22 +89,29 @@ async fn main(spawner: Spawner) {
         RANDOM_SEED,
     );
 
-    // let mut led_buffer = [0u8; 12 * LED_COUNT + 40];
-    // let leds = ws2812_spi::prerendered::Ws2812::new(
-    //     esp_hal::spi::master::Spi::new(peripherals.SPI2, Config::default().with_frequency(3.MHz()))
-    //         .unwrap()
-    //         .with_sck(peripherals.GPIO21)
-    //         .with_miso(peripherals.GPIO20)
-    //         .with_mosi(peripherals.GPIO10),
-    //     &mut led_buffer,
-    // );
+    static LED_BUF: StaticCell<[u8; LEDS_DATA_BUFFER_SIZE]> = StaticCell::new();
+    let led_buf = LED_BUF.init([0; LEDS_DATA_BUFFER_SIZE]);
 
-    let rmt = Rmt::new(peripherals.RMT, 80.MHz()).unwrap();
-    let led_strip_pin = peripherals.GPIO10;
+    static RX_BUF: StaticCell<[u8; LEDS_DATA_BUFFER_SIZE]> = StaticCell::new();
+    let rx_buf = RX_BUF.init([0; LEDS_DATA_BUFFER_SIZE]);
+
+    static TX_BUF: StaticCell<[u8; LEDS_DATA_BUFFER_SIZE]> = StaticCell::new();
+    let tx_buf = TX_BUF.init([0; LEDS_DATA_BUFFER_SIZE]);
+
+    let spi_dma = Spi::new(peripherals.SPI2, Config::default().with_frequency(3.MHz()))
+        .unwrap()
+        .with_mosi(peripherals.GPIO10)
+        .with_dma(peripherals.DMA_CH0);
+    let (rx_descriptors, tx_descriptors) =
+        dma_descriptors!(LEDS_DATA_BUFFER_SIZE, LEDS_DATA_BUFFER_SIZE);
+    let dma_rx_buf = DmaRxBuf::new(rx_descriptors, rx_buf).unwrap();
+    let dma_tx_buf = DmaTxBuf::new(tx_descriptors, tx_buf).unwrap();
+    let spi_dma_bus = SpiDmaBus::new(spi_dma, dma_rx_buf, dma_tx_buf);
+    let leds = ws2812_spi::prerendered::Ws2812::new(spi_dma_bus, led_buf);
 
     spawner.spawn(crate::wifi::wifi_task(controller)).unwrap();
     spawner.spawn(crate::server::net_task(runner)).unwrap();
     spawner.spawn(crate::server::server_task(stack)).unwrap();
 
-    crate::presets::run_renderer(rmt, led_strip_pin).await;
+    crate::presets::run_renderer(leds).await;
 }
