@@ -1,0 +1,2 @@
+| version | method | value     |
+| 1 byte  | 1 byte | 256 bytes |
