@@ -18,10 +18,7 @@ trait Preset {
     async fn run(leds: &mut LedsAdapter, preset_settings: &PresetSettings) -> Result<()>;
 }
 
-pub async fn run_renderer(mut leds: LedsAdapter) {
-    // let rmt_buffer = [0u32; SMART_LEDS_BUFFER_SIZE];
-    // let mut leds = SmartLedsAdapter::new(rmt.channel0, pin, rmt_buffer);
-
+pub async fn run_renderer(mut leds: LedsAdapter) -> ! {
     loop {
         SHOULD_UPDATE.store(false, Ordering::Relaxed);
 

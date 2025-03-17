@@ -59,7 +59,7 @@ static_cell      = { version = "2.1.0", features = ["nightly"] }
 ws2812-spi = "0.5.0"
 esp-storage = { version = "0.4.0", features = ["esp32c3"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-esp-hal-smartled = { git = "https://github.com/esp-rs/esp-hal-community", rev = "ad75112", features = ["esp32c3"] }
+# esp-hal-smartled = { git = "https://github.com/esp-rs/esp-hal-community", rev = "ad75112", features = ["esp32c3"] }
 embassy-sync = "0.6.2"
 smart-leds-trait = "0.3.1"
 serde_json = { version = "1.0.140",  default-features = false, features = ["alloc", "raw_value"] }

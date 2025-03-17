@@ -1,5 +1,5 @@
 {
-  description = "Rust esp32-c3 flake";
+  description = "sl1-firmware flake";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";

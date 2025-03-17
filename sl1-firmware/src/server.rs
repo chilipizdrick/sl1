@@ -129,32 +129,6 @@ impl TryFrom<&[u8]> for ClientMessage {
     }
 }
 
-// impl ClientMessage {
-//     fn method_id(&self) -> u8 {
-//         match self {
-//             ClientMessage::Ping => 0,
-//             ClientMessage::GetClientMessage(msg) => match msg {
-//                 GetClientMessage::GetPresetInfo => 1,
-//                 GetClientMessage::GetSettings => 2,
-//                 GetClientMessage::GetWifiSettings => 3,
-//                 GetClientMessage::GetPresetSettings => 4,
-//             },
-//             ClientMessage::SetClientMessage(msg) => match msg {
-//                 SetClientMessage::Toggle => 5,
-//                 SetClientMessage::TurnOn => 6,
-//                 SetClientMessage::TurnOff => 7,
-//                 SetClientMessage::SetPreset(_) => 8,
-//                 SetClientMessage::SetSettings(_) => 9,
-//                 SetClientMessage::SetWifiSettings(_) => 10,
-//                 SetClientMessage::SetPresetSettings(_) => 11,
-//                 SetClientMessage::SetBrightness(_) => 12,
-//                 SetClientMessage::SetSpeed(_) => 13,
-//                 SetClientMessage::SetScale(_) => 14,
-//             },
-//         }
-//     }
-// }
-
 #[derive(Clone, Copy, Debug)]
 enum SendServerMessage {
     PresetInfo,

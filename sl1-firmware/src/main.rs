@@ -45,7 +45,7 @@ static STORAGE: LazyLock<Mutex<FlashStorage>> =
 static SETTINGS: LazyLock<Mutex<Settings>> = LazyLock::new(|| Mutex::new(Settings::default()));
 
 #[esp_hal_embassy::main]
-async fn main(spawner: Spawner) {
+async fn main(spawner: Spawner) -> ! {
     esp_alloc::heap_allocator!(64 * 1024);
 
     init_settings_storage().await.unwrap();
