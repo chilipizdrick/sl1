@@ -1,5 +1,9 @@
 # sl1
 
-A pet project of mine - smart RGB strip device (firmware is complete, mostly) with desktop GUI (in progress) and Android app (not even started).
+> [!WARNING]
+> In active development. This project is mostly a way for me to investigate
+> embedded development and GUI libraries in rust.
 
-In active development.
+A pet project of mine - smart RGB strip device (firmware is complete, mostly)
+with desktop GUI app (complete, mostly) and Android app (not even started).
+
