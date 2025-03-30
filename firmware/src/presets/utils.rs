@@ -60,7 +60,7 @@ pub fn lerp_color(a: &[u8; 3], b: &[u8; 3], frac: u8) -> [u8; 3] {
     result
 }
 
-pub fn color_wheel(wheel_pos: &u8) -> [u8; 3] {
+pub fn color_wheel(wheel_pos: u8) -> [u8; 3] {
     match wheel_pos {
         0..85 => [255 - wheel_pos * 3, wheel_pos * 3, 0],
         85..170 => [0, 255 - (wheel_pos - 85) * 3, (wheel_pos - 85) * 3],

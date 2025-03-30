@@ -21,7 +21,7 @@ impl Preset for DynamicColorPreset {
             for i in 0..=255 {
                 for _ in 0..=(255 - preset_settings.speed) {
                     let color = dim(
-                        &whiten(&color_wheel(&i), preset_settings.scale),
+                        &whiten(&color_wheel(i), preset_settings.scale),
                         255 - preset_settings.brightness,
                     );
 

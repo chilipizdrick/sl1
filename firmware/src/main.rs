@@ -21,7 +21,6 @@ use esp_hal::{
     spi::master::{Config, Spi, SpiDmaBus},
     time::RateExtU32,
 };
-use esp_println::dbg;
 use esp_storage::FlashStorage;
 use esp_wifi::{
     wifi::{new_with_config, ClientConfiguration, WifiDevice, WifiStaDevice},
@@ -46,12 +45,12 @@ static SETTINGS: LazyLock<Mutex<Settings>> = LazyLock::new(|| Mutex::new(Setting
 
 #[esp_hal_embassy::main]
 async fn main(spawner: Spawner) -> ! {
-    esp_alloc::heap_allocator!(64 * 1024);
+    esp_alloc::heap_allocator!(128 * 1024);
 
     init_settings_storage().await.unwrap();
     *SETTINGS.get().lock().await = Settings::load().await.unwrap();
 
-    dbg!(SETTINGS.get().lock().await);
+    log::debug!("Settings: {:?}", SETTINGS.get().lock().await);
 
     let peripherals_config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(peripherals_config);

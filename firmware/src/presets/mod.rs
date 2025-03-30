@@ -35,7 +35,7 @@ pub async fn run_renderer(mut leds: LedsAdapter) -> ! {
 
         let settings_lock = SETTINGS.get().lock().await;
         let preset_id = settings_lock.current_preset_id;
-        let preset_settings = settings_lock.preset_settings[preset_id.id()];
+        let preset_settings = settings_lock.preset_settings[preset_id.id() as usize];
         drop(settings_lock);
 
         let res = match preset_id.id() {

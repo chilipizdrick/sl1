@@ -1,5 +1,5 @@
 {
-  description = "sl1-iced-gui flake";
+  description = "sl1-firmware flake";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -15,13 +15,17 @@
             (alias "run" ''cargo run'')
             (alias "build" ''cargo build'')
             (alias "build-release" ''cargo build --release'')
+            (alias "flash" ''espflash flash ./target/riscv32imc-unknown-none-elf/debug/sl1'')
+            (alias "flash-release" ''espflash flash ./target/riscv32imc-unknown-none-elf/release/sl1'')
+            (alias "setup-rust" ''${pkgs.rustup}/bin/rustup toolchain install stable --component rust-src && ${pkgs.rustup}/bin/rustup target add riscv32imc-unknown-none-elf'')
           ];
 
           buildInputs = with pkgs; [
-            wayland
-            libxkbcommon
-            vulkan-loader
-            pkg-config
+            rustup
+            cargo
+            cargo-udeps
+
+            espflash
           ];
 
           shellHook =

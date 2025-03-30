@@ -9,7 +9,7 @@ use crate::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub wifi_settings: WifiSettings,
-    pub preset_settings: [PresetSettings; PRESET_COUNT],
+    pub preset_settings: [PresetSettings; PRESET_COUNT as usize],
     pub current_preset_id: PresetId,
     pub is_on: bool,
 }
@@ -30,7 +30,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             wifi_settings: WifiSettings::default(),
-            preset_settings: [PresetSettings::default(); PRESET_COUNT],
+            preset_settings: [PresetSettings::default(); PRESET_COUNT as usize],
             current_preset_id: PresetId::new_fallible(1).unwrap(),
             is_on: true,
         }
@@ -114,17 +114,17 @@ impl Default for PresetSettings {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
-pub struct PresetId(usize);
+pub struct PresetId(u8);
 
 impl PresetId {
-    pub fn new_fallible(id: usize) -> Result<Self> {
+    pub fn new_fallible(id: u8) -> Result<Self> {
         match id {
             0..PRESET_COUNT => Ok(Self(id)),
             _ => Err(Error::PresetIdOutOfBounds),
         }
     }
 
-    pub fn id(&self) -> usize {
+    pub fn id(&self) -> u8 {
         self.0
     }
 }

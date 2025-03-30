@@ -1,11 +1,13 @@
 [package]
-name = "sl1-iced-gui"
+name = "sl1-desktop"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-iced = { version = "0.13.1", features = ["tokio"] }
+directories = "6.0.0"
+iced = { version = "0.13.1", features = ["smol"] }
+log = "0.4.26"
 serde = "1.0.219"
 serde_json = "1.0.140"
-# tokio = { version = "1.44.1", features = ["full"] }
+toml = "0.8.20"
 tracing-subscriber = "0.3.19"
