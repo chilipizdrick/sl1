@@ -8,7 +8,7 @@ pub enum Error {
     UnsupportedProtocolVersion,
     SerializationError(serde_json::Error),
     DeserializationError(serde_json::Error),
-    SendError(embassy_net::tcp::Error),
+    SendError(embassy_net::udp::SendError),
     StorageWriteError(esp_storage::FlashStorageError),
     StorageReadError(esp_storage::FlashStorageError),
     Unspecified,

@@ -98,8 +98,11 @@ impl Default for WifiSettings {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PresetSettings {
+    #[serde(rename = "b")]
     pub brightness: u8,
+    #[serde(rename = "sp")]
     pub speed: u8,
+    #[serde(rename = "sc")]
     pub scale: u8,
 }
 

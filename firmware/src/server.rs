@@ -1,9 +1,13 @@
 use alloc::string::{String, ToString};
 use core::sync::atomic::Ordering;
-use embassy_net::{tcp::TcpSocket, Runner, Stack};
-use embedded_io_async::Write;
+use embassy_net::{
+    udp::{UdpMetadata, UdpSocket},
+    Runner, Stack,
+};
 use esp_hal::reset::software_reset;
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
+use serde_json::to_string;
+use smoltcp::storage::PacketMetadata;
 
 use crate::{
     settings::{PresetId, PresetSettings, Settings, WifiSettings},
@@ -31,6 +35,14 @@ impl TryFrom<u8> for ProtocolVersion {
     }
 }
 
+impl ProtocolVersion {
+    fn to_u8(&self) -> u8 {
+        match self {
+            ProtocolVersion::V1 => 1,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 enum ClientMessage {
     Get(GetClientMessage),
@@ -40,11 +52,12 @@ enum ClientMessage {
 #[derive(Clone, Copy, Debug)]
 enum GetClientMessage {
     Ping,
+    IsOn,
     CurrentPresetId,
     PresetInfo,
     Settings,
     WifiSettings,
-    PresetSettings,
+    CurrentPresetSettings,
 }
 
 #[derive(Clone, Debug)]
@@ -55,7 +68,7 @@ enum SetClientMessage {
     Preset(PresetId),
     Settings(Settings),
     WifiSettings(WifiSettings),
-    PresetSettings(PresetSettings),
+    CurrentPresetSettings(PresetSettings),
     Brightness(u8),
     Speed(u8),
     Scale(u8),
@@ -74,47 +87,48 @@ impl ClientMessage {
 
         match method {
             0x01 => Ok(ClientMessage::Get(GetClientMessage::Ping)),
-            0x02 => Ok(ClientMessage::Get(GetClientMessage::CurrentPresetId)),
-            0x03 => Ok(ClientMessage::Get(GetClientMessage::PresetInfo)),
-            0x04 => Ok(ClientMessage::Get(GetClientMessage::Settings)),
-            0x05 => Ok(ClientMessage::Get(GetClientMessage::WifiSettings)),
-            0x06 => Ok(ClientMessage::Get(GetClientMessage::PresetSettings)),
+            0x02 => Ok(ClientMessage::Get(GetClientMessage::IsOn)),
+            0x03 => Ok(ClientMessage::Get(GetClientMessage::CurrentPresetId)),
+            0x04 => Ok(ClientMessage::Get(GetClientMessage::PresetInfo)),
+            0x05 => Ok(ClientMessage::Get(GetClientMessage::Settings)),
+            0x06 => Ok(ClientMessage::Get(GetClientMessage::WifiSettings)),
+            0x07 => Ok(ClientMessage::Get(GetClientMessage::CurrentPresetSettings)),
 
-            0x07 => Ok(ClientMessage::Set(SetClientMessage::Toggle)),
-            0x08 => Ok(ClientMessage::Set(SetClientMessage::TurnOn)),
-            0x09 => Ok(ClientMessage::Set(SetClientMessage::TurnOff)),
-            0x0A => {
+            0x08 => Ok(ClientMessage::Set(SetClientMessage::Toggle)),
+            0x09 => Ok(ClientMessage::Set(SetClientMessage::TurnOn)),
+            0x0a => Ok(ClientMessage::Set(SetClientMessage::TurnOff)),
+            0x0B => {
                 let preset_id = PresetId::new_fallible(buf[2])?;
                 Ok(ClientMessage::Set(SetClientMessage::Preset(preset_id)))
             }
-            0x0B => {
+            0x0C => {
                 let settings: Settings =
                     serde_json::from_slice(&buf[2..]).map_err(Error::DeserializationError)?;
                 Ok(ClientMessage::Set(SetClientMessage::Settings(settings)))
             }
-            0x0C => {
+            0x0D => {
                 let wifi_settings: WifiSettings =
                     serde_json::from_slice(&buf[2..]).map_err(Error::DeserializationError)?;
                 Ok(ClientMessage::Set(SetClientMessage::WifiSettings(
                     wifi_settings,
                 )))
             }
-            0x0D => {
+            0x0E => {
                 let preset_settings: PresetSettings =
                     serde_json::from_slice(&buf[2..]).map_err(Error::DeserializationError)?;
-                Ok(ClientMessage::Set(SetClientMessage::PresetSettings(
+                Ok(ClientMessage::Set(SetClientMessage::CurrentPresetSettings(
                     preset_settings,
                 )))
             }
-            0x0E => {
+            0x0F => {
                 let brightness = buf[2];
                 Ok(ClientMessage::Set(SetClientMessage::Brightness(brightness)))
             }
-            0x0F => {
+            0x10 => {
                 let speed = buf[2];
                 Ok(ClientMessage::Set(SetClientMessage::Speed(speed)))
             }
-            0x10 => {
+            0x11 => {
                 let scale = buf[2];
                 Ok(ClientMessage::Set(SetClientMessage::Scale(scale)))
             }
@@ -129,10 +143,11 @@ enum ServerMessage {
     Error,
 
     GetPing,
+    GetIsOn,
     GetCurrentPresetId,
     GetPresetInfo,
     GetSettings,
-    GetPresetSettings,
+    GetCurrentPresetSettings,
     GetWifiSettings,
 
     SetToggle,
@@ -141,7 +156,7 @@ enum ServerMessage {
     SetPreset,
     SetSettings,
     SetWifiSettings,
-    SetPresetSettings,
+    SetCurrentPresetSettings,
     SetBrightness,
     SetSpeed,
     SetScale,
@@ -152,21 +167,22 @@ impl ServerMessage {
         match self {
             ServerMessage::Error => 0x00,
             ServerMessage::GetPing => 0x01,
-            ServerMessage::GetCurrentPresetId => 0x02,
-            ServerMessage::GetPresetInfo => 0x03,
-            ServerMessage::GetSettings => 0x04,
-            ServerMessage::GetPresetSettings => 0x05,
-            ServerMessage::GetWifiSettings => 0x06,
-            ServerMessage::SetToggle => 0x07,
-            ServerMessage::SetTurnOn => 0x08,
-            ServerMessage::SetTurnOff => 0x09,
-            ServerMessage::SetPreset => 0x0A,
-            ServerMessage::SetSettings => 0x0B,
-            ServerMessage::SetWifiSettings => 0x0C,
-            ServerMessage::SetPresetSettings => 0x0D,
-            ServerMessage::SetBrightness => 0x0E,
-            ServerMessage::SetSpeed => 0x0F,
-            ServerMessage::SetScale => 0x10,
+            ServerMessage::GetIsOn => 0x02,
+            ServerMessage::GetCurrentPresetId => 0x03,
+            ServerMessage::GetPresetInfo => 0x04,
+            ServerMessage::GetSettings => 0x05,
+            ServerMessage::GetCurrentPresetSettings => 0x06,
+            ServerMessage::GetWifiSettings => 0x07,
+            ServerMessage::SetToggle => 0x08,
+            ServerMessage::SetTurnOn => 0x09,
+            ServerMessage::SetTurnOff => 0x0A,
+            ServerMessage::SetPreset => 0x0B,
+            ServerMessage::SetSettings => 0x0C,
+            ServerMessage::SetWifiSettings => 0x0D,
+            ServerMessage::SetCurrentPresetSettings => 0x0E,
+            ServerMessage::SetBrightness => 0x0F,
+            ServerMessage::SetSpeed => 0x10,
+            ServerMessage::SetScale => 0x11,
         }
     }
 
@@ -178,7 +194,7 @@ impl ServerMessage {
             SetClientMessage::Preset(_) => ServerMessage::SetPreset,
             SetClientMessage::Settings(_) => ServerMessage::SetSettings,
             SetClientMessage::WifiSettings(_) => ServerMessage::SetWifiSettings,
-            SetClientMessage::PresetSettings(_) => ServerMessage::SetPresetSettings,
+            SetClientMessage::CurrentPresetSettings(_) => ServerMessage::SetCurrentPresetSettings,
             SetClientMessage::Brightness(_) => ServerMessage::SetBrightness,
             SetClientMessage::Speed(_) => ServerMessage::SetSpeed,
             SetClientMessage::Scale(_) => ServerMessage::SetScale,
@@ -188,11 +204,12 @@ impl ServerMessage {
     fn from_get_client_message(message: &GetClientMessage) -> Self {
         match message {
             GetClientMessage::Ping => ServerMessage::GetPing,
+            GetClientMessage::IsOn => ServerMessage::GetIsOn,
             GetClientMessage::CurrentPresetId => ServerMessage::GetCurrentPresetId,
             GetClientMessage::PresetInfo => ServerMessage::GetPresetInfo,
             GetClientMessage::Settings => ServerMessage::GetSettings,
             GetClientMessage::WifiSettings => ServerMessage::GetWifiSettings,
-            GetClientMessage::PresetSettings => ServerMessage::GetPresetSettings,
+            GetClientMessage::CurrentPresetSettings => ServerMessage::GetCurrentPresetSettings,
         }
     }
 
@@ -230,7 +247,7 @@ impl ServerMessage {
                         settings.save().await?;
                         software_reset();
                     }
-                    SetClientMessage::PresetSettings(preset_settings) => {
+                    SetClientMessage::CurrentPresetSettings(preset_settings) => {
                         let current_preset_id = settings.current_preset_id.id();
                         settings.preset_settings[current_preset_id as usize] = preset_settings;
                         settings.save().await?;
@@ -267,14 +284,22 @@ impl ServerMessage {
         }
     }
 
-    async fn send(&self, socket: &mut TcpSocket<'_>, buf: &mut [u8]) -> Result<()> {
-        buf[0] = ProtocolVersion::V1 as u8;
+    async fn send(
+        &self,
+        socket: &mut UdpSocket<'_>,
+        buf: &mut [u8],
+        addr: UdpMetadata,
+    ) -> Result<()> {
+        buf[0] = ProtocolVersion::V1.to_u8();
         buf[1] = self.method_id();
         let mut payload: String = String::new();
         let settings = SETTINGS.get().lock().await;
 
         match self {
             ServerMessage::GetPing => payload = String::from(PONG),
+            ServerMessage::GetIsOn => {
+                buf[2] = settings.is_on as u8;
+            }
             ServerMessage::GetCurrentPresetId => {
                 payload = settings.current_preset_id.id().to_string()
             }
@@ -282,7 +307,7 @@ impl ServerMessage {
             ServerMessage::GetSettings => {
                 payload = serde_json::to_string(&*settings).map_err(Error::SerializationError)?;
             }
-            ServerMessage::GetPresetSettings => {
+            ServerMessage::GetCurrentPresetSettings => {
                 let current_preset_id = settings.current_preset_id.id();
                 payload =
                     serde_json::to_string(&settings.preset_settings[current_preset_id as usize])
@@ -299,16 +324,17 @@ impl ServerMessage {
         buf[2..2 + payload_bytes.len()].copy_from_slice(payload_bytes);
         let message_len = 2 + payload_bytes.len();
         socket
-            .write_all(&buf[..message_len])
+            .send_to(&buf[..message_len], addr)
             .await
-            .map_err(Error::SendError)?;
-        Ok(())
+            .map_err(Error::SendError)
     }
 }
 
 #[embassy_executor::task]
 pub async fn server_task(stack: Stack<'static>) -> ! {
+    let mut rx_meta = [PacketMetadata::EMPTY; 16];
     let mut rx_buffer = [0; MESSAGE_BUFFER_LENGTH];
+    let mut tx_meta = [PacketMetadata::EMPTY; 16];
     let mut tx_buffer = [0; MESSAGE_BUFFER_LENGTH];
     let mut message_buffer = [0; MESSAGE_BUFFER_LENGTH];
 
@@ -318,26 +344,21 @@ pub async fn server_task(stack: Stack<'static>) -> ! {
         None => log::warn!("Failed to aquire IP address"),
     }
 
-    let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
-    socket.accept(SERVER_PORT).await.unwrap();
+    let mut socket = UdpSocket::new(
+        stack,
+        &mut rx_meta,
+        &mut rx_buffer,
+        &mut tx_meta,
+        &mut tx_buffer,
+    );
+    socket.bind(SERVER_PORT).unwrap();
+    log::info!("Server ready!");
 
     loop {
-        match socket.state() {
-            embassy_net::tcp::State::Closed | embassy_net::tcp::State::Closing => {
-                socket.close();
-                socket.accept(SERVER_PORT).await.unwrap();
-            }
-            embassy_net::tcp::State::CloseWait => {
-                socket.abort();
-                socket.accept(SERVER_PORT).await.unwrap();
-            }
-            _ => {}
-        }
-
-        let rx_size = match socket.read(&mut message_buffer).await {
-            Ok(size) => size,
+        let (rx_size, from_addr) = match socket.recv_from(&mut message_buffer).await {
+            Ok((size, addr)) => (size, addr),
             Err(e) => {
-                log::error!("Error recieving data from TCP connection: {:?}", e);
+                log::error!("Error recieving data from UDP connection: {:?}", e);
                 continue;
             }
         };
@@ -364,7 +385,7 @@ pub async fn server_task(stack: Stack<'static>) -> ! {
         let response = ServerMessage::from_client_message(request).await;
 
         response
-            .send(&mut socket, &mut message_buffer)
+            .send(&mut socket, &mut message_buffer, from_addr)
             .await
             .unwrap_or_else(|e| {
                 log::error!("Error sending response to client: {:?}", e);

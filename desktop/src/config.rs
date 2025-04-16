@@ -7,9 +7,11 @@ use std::{
 };
 
 use crate::{
+    Error, Result,
     device::{Device, Preset},
-    error::{Error, Result},
 };
+
+pub const DEVICE_PORT: u16 = 30462;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
@@ -20,8 +22,9 @@ pub struct Config {
 impl Config {
     pub fn save(&self) -> Result<()> {
         let config_path = Self::config_path()?;
-        let config_string = toml::to_string(&self).map_err(|_| Error::Serialization)?;
-        fs::write(config_path, config_string).map_err(|_| Error::Fs)
+        let config_string = toml::to_string(&self).map_err(Error::SerializeToml)?;
+        fs::write(config_path, config_string).map_err(Error::FsWrite)?;
+        Ok(())
     }
 
     pub fn load() -> Result<Self> {
@@ -29,15 +32,18 @@ impl Config {
         if !config_path.exists() {
             return Err(Error::MissingConfig);
         }
-        let config_string = std::fs::read_to_string(config_path).map_err(|_| Error::Fs)?;
-        toml::from_str(&config_string).map_err(|_| Error::Deserialization)
+        let config_string = std::fs::read_to_string(config_path).map_err(Error::FileRead)?;
+        toml::from_str(&config_string).map_err(Error::DeserializeToml)
     }
 
     fn config_path() -> Result<Box<Path>> {
-        let base_dirs = BaseDirs::new().ok_or(Error::Fs)?;
+        let base_dirs = BaseDirs::new().ok_or(Error::Fs(
+            "No valid home directory path could be retrieved from the operating system."
+                .to_string(),
+        ))?;
         let path = base_dirs.config_dir().join("sl1/");
         if !path.exists() {
-            fs::create_dir_all(&path).map_err(|_| Error::Fs)?;
+            fs::create_dir_all(&path).map_err(Error::FsWrite)?;
         }
         Ok(path.join("config.toml").into())
     }
@@ -61,8 +67,8 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        let ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 2));
-        let port = 8080;
+        let ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1));
+        let port = DEVICE_PORT;
         let device = Device::new(ip, port);
         let preset_info = Vec::new();
         Self {
