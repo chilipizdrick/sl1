@@ -238,9 +238,9 @@ impl Reciever {
     }
 
     async fn recv(&mut self) -> Result<DeviceResponse> {
-        let (size, _) = self
+        let size = self
             .socket
-            .recv_from(&mut self.recv_buff)
+            .recv(&mut self.recv_buff)
             .await
             .map_err(Error::UdpRecv)?;
 

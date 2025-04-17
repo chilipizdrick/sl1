@@ -6,13 +6,12 @@ use embassy_net::{
 };
 use esp_hal::reset::software_reset;
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
-use serde_json::to_string;
 use smoltcp::storage::PacketMetadata;
 
 use crate::{
     settings::{PresetId, PresetSettings, Settings, WifiSettings},
-    Error, Result, MESSAGE_BUFFER_LENGTH, MINIMAL_CLIENT_MESSAGE_LENGTH, PONG, PRESET_INFO,
-    SERVER_PORT, SETTINGS, SHOULD_UPDATE,
+    Error, Result, MESSAGE_BUFFER_LENGTH, MINIMAL_CLIENT_MESSAGE_LENGTH, PRESET_INFO, SERVER_PORT,
+    SETTINGS, SHOULD_UPDATE,
 };
 
 #[embassy_executor::task]
@@ -36,7 +35,7 @@ impl TryFrom<u8> for ProtocolVersion {
 }
 
 impl ProtocolVersion {
-    fn to_u8(&self) -> u8 {
+    fn as_u8(&self) -> u8 {
         match self {
             ProtocolVersion::V1 => 1,
         }
@@ -290,13 +289,12 @@ impl ServerMessage {
         buf: &mut [u8],
         addr: UdpMetadata,
     ) -> Result<()> {
-        buf[0] = ProtocolVersion::V1.to_u8();
+        buf[0] = ProtocolVersion::V1.as_u8();
         buf[1] = self.method_id();
         let mut payload: String = String::new();
         let settings = SETTINGS.get().lock().await;
 
         match self {
-            ServerMessage::GetPing => payload = String::from(PONG),
             ServerMessage::GetIsOn => {
                 buf[2] = settings.is_on as u8;
             }

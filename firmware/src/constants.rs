@@ -8,6 +8,5 @@ pub const MESSAGE_BUFFER_LENGTH: usize = 1024;
 pub const MINIMAL_CLIENT_MESSAGE_LENGTH: usize = 2;
 pub const SETTINGS_STORAGE_OFFSET: u32 = 0x310000;
 pub const PRESET_INFO: &str = r#"[{"id":0,"name":"Static Color"},{"id":1,"name":"Dynamic Color"},{"id":2,"name":"Running Rainbow"},{"id":3,"name":"Fire"}]"#;
-pub const PONG: &str = "Pong!";
 pub const WIFI_SSID: &str = env!("WIFI_SSID");
 pub const WIFI_PASSWORD: &str = env!("WIFI_PASSWORD");

@@ -13,7 +13,8 @@ use iced::{
     futures::channel::mpsc,
     theme::Palette,
     widget::{
-        Space, button, column, combo_box, row, scrollable, slider, text, text_editor, text_input,
+        self, Space, button, column, combo_box, row, scrollable, slider, text, text_editor,
+        text_input,
     },
 };
 use ipnetwork::IpNetwork;
@@ -29,8 +30,8 @@ use crate::{
     device::{Device, DeviceSettings, Preset},
 };
 
-const POLL_INTERVAL: Duration = Duration::from_secs(3);
-const DISCONNECT_INTERVAL: Duration = Duration::from_secs(5);
+const POLL_INTERVAL: Duration = Duration::from_secs(1);
+const DISCONNECT_INTERVAL: Duration = Duration::from_secs(3);
 
 fn main() -> iced::Result {
     tracing_subscriber::fmt::init();
@@ -58,11 +59,12 @@ struct App {
     scale: u8,
     preset: combo_box::State<Preset>,
     selected_preset: Option<Preset>,
+    preset_info_message: Option<PresetInfoMessage>,
     ip_text: String,
     port_text: String,
     subnet_text: String,
     device_settings_content: text_editor::Content,
-    detected_devices: Option<Vec<Device>>,
+    detected_devices: DetectedDevicesState,
 
     ip_port_error_message: Option<IpPortErrorMessage>,
     device_settings_error_message: Option<DeviceSettingsErrorMessage>,
@@ -102,11 +104,12 @@ impl App {
             scale: 128,
             preset: combo_box::State::new(config.preset_info().to_vec()),
             selected_preset: None,
+            preset_info_message: None,
             ip_text: config.device().ip().to_string(),
             port_text: config.device().port().to_string(),
             subnet_text: "192.168.1.0/24".to_string(),
             device_settings_content: text_editor::Content::new(),
-            detected_devices: None,
+            detected_devices: DetectedDevicesState::None,
 
             ip_port_error_message: None,
             device_settings_error_message: None,
@@ -163,11 +166,17 @@ impl App {
             SettingsMessage::ExportDeviceSettings => self.handle_export(),
             SettingsMessage::DetectDevice => self.handle_detect_device(),
             SettingsMessage::DetectorOutput(devices) => self.handle_detector_output(devices),
+            SettingsMessage::SetDetectedDevice(device) => self.handle_set_detected_device(device),
         }
     }
 
     fn handle_request_message(&mut self, message: Request) -> Task<Message> {
-        let task = if let Request::Set(message) = &message {
+        if let Some(sender) = &mut self.sender {
+            if let Err(err) = sender.try_send(message.clone()) {
+                log::error!("Error sending message: {err}");
+            }
+        }
+        if let Request::Set(message) = &message {
             match message {
                 SetRequest::Toggle => {
                     self.is_on = !self.is_on;
@@ -183,13 +192,7 @@ impl App {
             }
         } else {
             Task::none()
-        };
-        if let Some(sender) = &mut self.sender {
-            if let Err(err) = sender.try_send(message) {
-                log::error!("Error sending message: {err}");
-            }
         }
-        task
     }
 
     fn set_selected_preset(&mut self, id: &PresetId) {
@@ -249,6 +252,7 @@ impl App {
             DR::Get(DGR::PresetInfo(preset_info)) => {
                 self.config.set_preset_info(preset_info.clone());
                 self.preset = combo_box::State::new(preset_info);
+                self.preset_info_message = Some(PresetInfoMessage::PresetInfoLoaded);
                 self.save_config();
             }
             DR::Get(DGR::Settings(settings)) => {
@@ -357,7 +361,10 @@ impl App {
     fn handle_detect_device(&mut self) -> Task<Message> {
         self.detector_error_message = None;
         match self.handle_detect_device_fallible() {
-            Ok(task) => task,
+            Ok(task) => {
+                self.detected_devices = DetectedDevicesState::Loading;
+                task
+            }
             Err(err) => {
                 match err {
                     Error::IpNetworkParse(_) => {
@@ -380,9 +387,21 @@ impl App {
     }
 
     fn handle_detector_output(&mut self, devices: Vec<Device>) -> Task<Message> {
-        self.detected_devices = Some(devices);
+        self.detected_devices = DetectedDevicesState::Devices(devices);
         log::debug!("{:?}", &self.detected_devices);
         Task::none()
+    }
+
+    fn handle_set_detected_device(&mut self, device: Device) -> Task<Message> {
+        self.ip_text = device.ip().to_string();
+        self.port_text = device.port().to_string();
+        self.config.set_device(device);
+        self.save_config();
+        self.is_device_connected = false;
+        self.ip_port_error_message = None;
+        self.update(Message::Request(Request::SetDeviceAddr(
+            self.config.device().addr(),
+        )))
     }
 
     fn home_page(&self) -> Element<Message> {
@@ -391,12 +410,17 @@ impl App {
         let settings_button = button("Settings").on_press(Message::Page(Page::Settings));
         let load_presets_button =
             button("Load Presets").on_press(Message::Request(Request::Get(GetRequest::PresetInfo)));
+        let preset_info_message = match &self.preset_info_message {
+            Some(msg) => text!("{msg}").color(self.theme().palette().success),
+            None => text!(""),
+        };
 
         let is_device_connected_text = self.device_connection_state();
 
         let top_row = row![
             settings_button,
             load_presets_button,
+            preset_info_message,
             Space::with_width(iced::Length::Fill),
             is_device_connected_text
         ]
@@ -459,18 +483,51 @@ impl App {
         .into()
     }
 
+    fn detected_devices_button_style(
+        theme: &Theme,
+        status: widget::button::Status,
+    ) -> widget::button::Style {
+        let text_color = theme.palette().text;
+        let border = iced::Border {
+            radius: iced::border::radius(10),
+            ..Default::default()
+        };
+        let style_with_background = |bg: iced::Background| button::Style {
+            background: Some(bg),
+            text_color,
+            border,
+            ..Default::default()
+        };
+        match status {
+            button::Status::Active => style_with_background(iced::Color::TRANSPARENT.into()),
+            button::Status::Hovered => {
+                style_with_background(iced::Color::from_rgba(1.0, 1.0, 1.0, 0.05).into())
+            }
+            button::Status::Pressed => {
+                style_with_background(iced::Color::from_rgba(1.0, 1.0, 1.0, 0.1).into())
+            }
+            _ => button::Style::default(),
+        }
+    }
+
     fn view_device_detector_settings(&self) -> Element<Message> {
         let devices = &self.detected_devices;
         let section_title = text!("Detect devices in network").size(24);
+
+        use DetectedDevicesState as DDS;
         let device_widget: Element<Message> = match devices {
-            None => text!("Use detector to detect devices in network").into(),
-            Some(devices) => match devices.len() {
+            DDS::None => text!("Use detector to detect devices in network").into(),
+            DDS::Loading => text!("Loading...").into(),
+            DDS::Devices(devices) => match devices.len() {
                 0 => text!("No devices found").into(),
-                _ => column(
-                    devices
-                        .iter()
-                        .map(|device| text(format!("{device}")).into()),
-                )
+                _ => column(devices.iter().map(|device| {
+                    button(text(format!("{device}")))
+                        .on_press_with(|| {
+                            Message::Settings(SettingsMessage::SetDetectedDevice(device.clone()))
+                        })
+                        .style(Self::detected_devices_button_style)
+                        .into()
+                }))
                 .into(),
             },
         };
@@ -648,6 +705,14 @@ enum SettingsMessage {
     ExportDeviceSettings,
     DetectDevice,
     DetectorOutput(Vec<Device>),
+    SetDetectedDevice(Device),
+}
+
+#[derive(Debug, Clone)]
+enum DetectedDevicesState {
+    Devices(Vec<Device>),
+    Loading,
+    None,
 }
 
 #[derive(Debug, Clone)]
@@ -691,6 +756,20 @@ impl std::fmt::Display for DetectorErrorMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let msg = match self {
             DetectorErrorMessage::SubnetParse => "Invalid subnet has been entered!",
+        };
+        write!(f, "{msg}")
+    }
+}
+
+#[derive(Debug, Clone)]
+enum PresetInfoMessage {
+    PresetInfoLoaded,
+}
+
+impl std::fmt::Display for PresetInfoMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let msg = match self {
+            PresetInfoMessage::PresetInfoLoaded => "Preset info loaded!",
         };
         write!(f, "{msg}")
     }
