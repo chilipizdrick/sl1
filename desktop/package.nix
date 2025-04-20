@@ -56,12 +56,12 @@ rustPlatform.buildRustPackage rec {
 
   postInstall = ''
     install -Dm644 assets/icons/hicolor/512x512/apps/xyz.chilipizdrick.sl1-desktop.png \
-      $out/assets/icons/hicolor/512x512/apps/xyz.chilipizdrick.sl1-desktop.png
+      $out/share/icons/hicolor/512x512/apps/xyz.chilipizdrick.sl1-desktop.png
     install -Dm644 assets/icons/hicolor/256x256/apps/xyz.chilipizdrick.sl1-desktop.png \
-      $out/assets/icons/hicolor/256x256/apps/xyz.chilipizdrick.sl1-desktop.png
+      $out/share/icons/hicolor/256x256/apps/xyz.chilipizdrick.sl1-desktop.png
     install -Dm644 assets/icons/hicolor/128x128/apps/xyz.chilipizdrick.sl1-desktop.png \
-      $out/assets/icons/hicolor/128x128/apps/xyz.chilipizdrick.sl1-desktop.png
+      $out/share/icons/hicolor/128x128/apps/xyz.chilipizdrick.sl1-desktop.png
     install -Dm644 assets/icons/hicolor/64x64/apps/xyz.chilipizdrick.sl1-desktop.png \
-      $out/assets/icons/hicolor/64x64/apps/xyz.chilipizdrick.sl1-desktop.png
+      $out/share/icons/hicolor/64x64/apps/xyz.chilipizdrick.sl1-desktop.png
   '';
 }
