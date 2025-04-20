@@ -31,7 +31,7 @@ impl Default for Settings {
         Self {
             wifi_settings: WifiSettings::default(),
             preset_settings: [PresetSettings::default(); PRESET_COUNT as usize],
-            current_preset_id: PresetId::new_fallible(1).unwrap(),
+            current_preset_id: PresetId::new_fallible(0).unwrap(),
             is_on: true,
         }
     }

@@ -1,8 +1,11 @@
 [target.riscv32imc-unknown-none-elf]
-runner = "espflash flash --monitor --partition-table ./partition-table.csv"
+runner = "espflash flash --baud=921600 --monitor --partition-table ./partition-table.csv"
+
+[target.xtensa-esp32-none-elf]
+runner = "espflash flash --baud=921600 --monitor --partition-table ./partition-table.csv"
 
 [env]
-ESP_LOG="INFO"
+ESP_LOG="TRACE"
 
 [build]
 rustflags = [
@@ -10,8 +13,6 @@ rustflags = [
   # NOTE: May negatively impact performance of produced code
   "-C", "force-frame-pointers",
 ]
-
-target = "riscv32imc-unknown-none-elf"
 
 [unstable]
 build-std = ["alloc", "core"]

@@ -330,10 +330,10 @@ impl ServerMessage {
 #[embassy_executor::task]
 pub async fn server_task(stack: Stack<'static>) -> ! {
     let mut rx_meta = [PacketMetadata::EMPTY; 16];
-    let mut rx_buffer = [0; MESSAGE_BUFFER_LENGTH];
+    let mut rx_buf = [0; MESSAGE_BUFFER_LENGTH];
     let mut tx_meta = [PacketMetadata::EMPTY; 16];
-    let mut tx_buffer = [0; MESSAGE_BUFFER_LENGTH];
-    let mut message_buffer = [0; MESSAGE_BUFFER_LENGTH];
+    let mut tx_buf = [0; MESSAGE_BUFFER_LENGTH];
+    let mut message_buf = [0; MESSAGE_BUFFER_LENGTH];
 
     stack.wait_config_up().await;
     match stack.config_v4() {
@@ -341,18 +341,12 @@ pub async fn server_task(stack: Stack<'static>) -> ! {
         None => log::warn!("Failed to aquire IP address"),
     }
 
-    let mut socket = UdpSocket::new(
-        stack,
-        &mut rx_meta,
-        &mut rx_buffer,
-        &mut tx_meta,
-        &mut tx_buffer,
-    );
+    let mut socket = UdpSocket::new(stack, &mut rx_meta, &mut rx_buf, &mut tx_meta, &mut tx_buf);
     socket.bind(SERVER_PORT).unwrap();
     log::info!("Server ready!");
 
     loop {
-        let (rx_size, from_addr) = match socket.recv_from(&mut message_buffer).await {
+        let (rx_size, from_addr) = match socket.recv_from(&mut message_buf).await {
             Ok((size, addr)) => (size, addr),
             Err(e) => {
                 log::error!("Error recieving data from UDP connection: {:?}", e);
@@ -369,7 +363,7 @@ pub async fn server_task(stack: Stack<'static>) -> ! {
             continue;
         }
 
-        let request = match ClientMessage::from_message(&message_buffer[..rx_size]) {
+        let request = match ClientMessage::from_message(&message_buf[..rx_size]) {
             Ok(message) => message,
             Err(e) => {
                 log::error!("Error parsing recieved message: {:?}", e);
@@ -382,7 +376,7 @@ pub async fn server_task(stack: Stack<'static>) -> ! {
         let response = ServerMessage::from_client_message(request).await;
 
         response
-            .send(&mut socket, &mut message_buffer, from_addr)
+            .send(&mut socket, &mut message_buf, from_addr)
             .await
             .unwrap_or_else(|e| {
                 log::error!("Error sending response to client: {:?}", e);

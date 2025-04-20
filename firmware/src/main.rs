@@ -24,7 +24,7 @@ use esp_hal::{
 use esp_storage::FlashStorage;
 use esp_wifi::{
     EspWifiController,
-    wifi::{ClientConfiguration, WifiDevice, WifiStaDevice, new_with_config},
+    wifi::{ClientConfiguration, WifiController, WifiDevice, WifiStaDevice, new_with_config},
 };
 use settings::init_settings_storage;
 use static_cell::StaticCell;
@@ -47,36 +47,47 @@ static SETTINGS: LazyLock<Mutex<Settings>> = LazyLock::new(|| Mutex::new(Setting
 async fn main(spawner: Spawner) -> ! {
     esp_alloc::heap_allocator!(128 * 1024);
 
-    init_settings_storage().await.unwrap();
-    *SETTINGS.get().lock().await = Settings::load().await.unwrap();
-
-    log::debug!("Settings: {:?}", SETTINGS.get().lock().await);
+    esp_println::logger::init_logger_from_env();
 
     let peripherals_config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(peripherals_config);
 
-    esp_println::logger::init_logger_from_env();
-
+    #[cfg(feature = "esp32")]
+    let timg0 = esp_hal::timer::timg::TimerGroup::new(peripherals.TIMG0);
+    #[cfg(feature = "esp32c3")]
     let timgsys = esp_hal::timer::systimer::SystemTimer::new(peripherals.SYSTIMER);
+
+    #[cfg(feature = "esp32")]
+    esp_hal_embassy::init(timg0.timer0);
+    #[cfg(feature = "esp32c3")]
     esp_hal_embassy::init(timgsys.alarm0);
 
-    let timg0 = esp_hal::timer::timg::TimerGroup::new(peripherals.TIMG1);
+    init_settings_storage().await.unwrap();
+    *SETTINGS.get().lock().await = Settings::load().await.unwrap();
+
+    log::info!("Settings: {:?}", SETTINGS.get().lock().await);
+
+    let timg1 = esp_hal::timer::timg::TimerGroup::new(peripherals.TIMG1);
     static ESP_WIFI_CONTROLLER: StaticCell<EspWifiController<'static>> = StaticCell::new();
     let wifi_controller = ESP_WIFI_CONTROLLER.init(
         esp_wifi::init(
-            timg0.timer0,
+            timg1.timer0,
             esp_hal::rng::Rng::new(peripherals.RNG),
             peripherals.RADIO_CLK,
         )
         .unwrap(),
     );
+
     let sta_config = ClientConfiguration {
         ssid: heapless::String::from_str(WIFI_SSID).unwrap(),
         password: heapless::String::from_str(WIFI_PASSWORD).unwrap(),
         ..Default::default()
     };
-    let (device, controller): (WifiDevice<'_, WifiStaDevice>, _) =
+
+    log::info!("Error here!");
+    let (device, controller): (WifiDevice<'_, WifiStaDevice>, WifiController<'_>) =
         new_with_config(wifi_controller, peripherals.WIFI, sta_config).unwrap();
+    log::info!("Error passed!");
 
     let dhcp_config = embassy_net::DhcpConfig::default();
     let net_config = embassy_net::Config::dhcpv4(dhcp_config);
@@ -97,10 +108,17 @@ async fn main(spawner: Spawner) -> ! {
     static TX_BUF: StaticCell<[u8; LEDS_DATA_BUFFER_SIZE]> = StaticCell::new();
     let tx_buf = TX_BUF.init([0; LEDS_DATA_BUFFER_SIZE]);
 
+    #[cfg(feature = "esp32")]
+    let spi_dma = Spi::new(peripherals.SPI2, Config::default().with_frequency(3.MHz()))
+        .unwrap()
+        .with_mosi(peripherals.GPIO13)
+        .with_dma(peripherals.DMA_SPI2);
+    #[cfg(feature = "esp32c3")]
     let spi_dma = Spi::new(peripherals.SPI2, Config::default().with_frequency(3.MHz()))
         .unwrap()
         .with_mosi(peripherals.GPIO10)
         .with_dma(peripherals.DMA_CH0);
+
     let (rx_descriptors, tx_descriptors) =
         dma_descriptors!(LEDS_DATA_BUFFER_SIZE, LEDS_DATA_BUFFER_SIZE);
     let dma_rx_buf = DmaRxBuf::new(rx_descriptors, rx_buf).unwrap();
