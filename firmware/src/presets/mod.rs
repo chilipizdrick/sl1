@@ -10,8 +10,8 @@ use embassy_time::{Duration, Timer};
 use smart_leds_trait::SmartLedsWrite;
 
 use crate::{
-    settings::PresetSettings, LedsAdapter, Result, FRAME_TIME_MS, LED_COUNT, SETTINGS,
-    SHOULD_UPDATE,
+    FRAME_TIME_MS, LED_COUNT, LedsAdapter, Result, SETTINGS, SHOULD_UPDATE,
+    settings::PresetSettings,
 };
 
 trait Preset {

@@ -3,9 +3,9 @@ use embassy_time::{Duration, Ticker};
 use smart_leds_trait::SmartLedsWrite;
 
 use crate::{
-    presets::{noise::PerlinNoise, Preset},
+    Error, FRAME_TIME_MS, LED_COUNT, LedsAdapter, Result, SHOULD_UPDATE,
+    presets::{Preset, noise::PerlinNoise},
     settings::PresetSettings,
-    Error, LedsAdapter, Result, FRAME_TIME_MS, LED_COUNT, SHOULD_UPDATE,
 };
 
 use super::utils::lerp_gradient;

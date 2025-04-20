@@ -1,16 +1,16 @@
 use alloc::string::{String, ToString};
 use core::sync::atomic::Ordering;
 use embassy_net::{
-    udp::{PacketMetadata, UdpMetadata, UdpSocket},
     Runner, Stack,
+    udp::{PacketMetadata, UdpMetadata, UdpSocket},
 };
 use esp_hal::reset::software_reset;
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
 
 use crate::{
-    settings::{PresetId, PresetSettings, Settings, WifiSettings},
-    Error, Result, MESSAGE_BUFFER_LENGTH, MINIMAL_CLIENT_MESSAGE_LENGTH, PRESET_INFO, SERVER_PORT,
+    Error, MESSAGE_BUFFER_LENGTH, MINIMAL_CLIENT_MESSAGE_LENGTH, PRESET_INFO, Result, SERVER_PORT,
     SETTINGS, SHOULD_UPDATE,
+    settings::{PresetId, PresetSettings, Settings, WifiSettings},
 };
 
 #[embassy_executor::task]

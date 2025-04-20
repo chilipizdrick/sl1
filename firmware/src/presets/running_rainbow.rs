@@ -3,12 +3,12 @@ use embassy_time::{Duration, Ticker};
 use smart_leds_trait::SmartLedsWrite;
 
 use crate::{
+    Error, LED_COUNT, LedsAdapter, Result, SHOULD_UPDATE,
     presets::{
-        utils::{color_wheel, dim},
         Preset,
+        utils::{color_wheel, dim},
     },
     settings::PresetSettings,
-    Error, LedsAdapter, Result, LED_COUNT, SHOULD_UPDATE,
 };
 
 pub struct RunningRainbowPreset {}
