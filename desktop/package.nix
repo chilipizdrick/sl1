@@ -18,7 +18,6 @@ rustPlatform.buildRustPackage rec {
 
   nativeBuildInputs = [
     copyDesktopItems
-    makeWrapper
     pkg-config
   ];
 
@@ -45,18 +44,24 @@ rustPlatform.buildRustPackage rec {
   ];
 
   postFixup = let
-    libPathWayland = lib.makeLibraryPath [
+    rpathWayland = lib.makeLibraryPath [
       wayland
       vulkan-loader
       libxkbcommon
     ];
   in ''
     rpath=$(patchelf --print-rpath $out/bin/sl1-desktop)
-    patchelf --set-rpath "$rpath:${libPathWayland}" $out/bin/sl1-desktop
+    patchelf --set-rpath "$rpath:${rpathWayland}" $out/bin/sl1-desktop
   '';
 
   postInstall = ''
+    install -Dm644 assets/icons/hicolor/512x512/apps/xyz.chilipizdrick.sl1-desktop.png \
+      $out/assets/icons/hicolor/512x512/apps/xyz.chilipizdrick.sl1-desktop.png
+    install -Dm644 assets/icons/hicolor/256x256/apps/xyz.chilipizdrick.sl1-desktop.png \
+      $out/assets/icons/hicolor/256x256/apps/xyz.chilipizdrick.sl1-desktop.png
     install -Dm644 assets/icons/hicolor/128x128/apps/xyz.chilipizdrick.sl1-desktop.png \
       $out/assets/icons/hicolor/128x128/apps/xyz.chilipizdrick.sl1-desktop.png
+    install -Dm644 assets/icons/hicolor/64x64/apps/xyz.chilipizdrick.sl1-desktop.png \
+      $out/assets/icons/hicolor/64x64/apps/xyz.chilipizdrick.sl1-desktop.png
   '';
 }
