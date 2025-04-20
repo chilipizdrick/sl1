@@ -48,12 +48,9 @@
             cargoLock.lockFile = ./desktop/Cargo.lock;
             src = pkgs.lib.cleanSource ./desktop;
 
-            buildCommand = ''
+            postInstall = ''
               mkdir -p $out/share/applications
               cp ${./desktop/assets/sl1-desktop.desktop} $out/share/applications
-            '';
-
-            postInstall = ''
               substituteInPlace $out/share/applications/sl1-desktop.desktop \
                 --replace 'Exec=sl1-desktop' 'Exec=$out/bin/sl1-desktop'
             '';
