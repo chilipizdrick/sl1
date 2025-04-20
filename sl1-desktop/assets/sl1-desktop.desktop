@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=0.1.0
+Name=Smart Lights
+Comment=Utility for controlling Smart lights (sl1) devices
+Exec=sl1-desktop
+Icon=sl1-desktoo
+Terminal=false
+Categories=IOT

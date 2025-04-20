@@ -12,6 +12,26 @@
       perSystem = {pkgs, ...}: let
         alias = pkgs.writeShellScriptBin;
       in {
+        packages = rec {
+          sl1-desktop = pkgs.rustPlatform.buildRustPackage {
+            name = "sl1-desktop";
+            version = "0.1.0";
+            cargoLock.lockFile = ./sl1-desktop/Cargo.lock;
+            src = pkgs.lib.cleanSource ./sl1-desktop;
+
+            buildCommand = ''
+              mkdir -p $out/share/applications
+              cp ${./sl1-desktop/assets/sl1-desktop.desktop} $out/share/applications
+            '';
+
+            postInstall = ''
+              substituteInPlace $out/share/applications/sl1-desktop.desktop \
+                --replace 'Exec=sl1-desktop' 'Exec=$out/bin/sl1-desktop'
+            '';
+          };
+          default = sl1-desktop;
+        };
+
         devShells.default = pkgs.mkShell rec {
           buildInputs = with pkgs; [
             rustup
