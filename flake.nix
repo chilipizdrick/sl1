@@ -45,12 +45,12 @@
           sl1-desktop = pkgs.rustPlatform.buildRustPackage {
             name = "sl1-desktop";
             version = "0.1.0";
-            cargoLock.lockFile = ./sl1-desktop/Cargo.lock;
-            src = pkgs.lib.cleanSource ./sl1-desktop;
+            cargoLock.lockFile = ./desktop/Cargo.lock;
+            src = pkgs.lib.cleanSource ./desktop;
 
             buildCommand = ''
               mkdir -p $out/share/applications
-              cp ${./sl1-desktop/assets/sl1-desktop.desktop} $out/share/applications
+              cp ${./desktop/assets/sl1-desktop.desktop} $out/share/applications
             '';
 
             postInstall = ''
