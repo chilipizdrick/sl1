@@ -1,12 +1,11 @@
 use alloc::string::{String, ToString};
 use core::sync::atomic::Ordering;
 use embassy_net::{
-    udp::{UdpMetadata, UdpSocket},
+    udp::{PacketMetadata, UdpMetadata, UdpSocket},
     Runner, Stack,
 };
 use esp_hal::reset::software_reset;
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
-use smoltcp::storage::PacketMetadata;
 
 use crate::{
     settings::{PresetId, PresetSettings, Settings, WifiSettings},

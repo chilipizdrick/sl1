@@ -405,19 +405,8 @@ version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4cd70abe47945c9116972781b5c05277ad855a5f5569fe2afd3e2e61a103cc0"
 dependencies = [
- "esp-build 0.2.0",
+ "esp-build",
  "esp-println",
-]
-
-[[package]]
-name = "esp-build"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b94a4b8d74e7cc7baabcca5b2277b41877e039ad9cd49959d48ef94dac7eab4b"
-dependencies = [
- "quote",
- "syn",
- "termcolor",
 ]
 
 [[package]]
@@ -465,7 +454,7 @@ dependencies = [
  "embedded-io",
  "embedded-io-async",
  "enumset",
- "esp-build 0.2.0",
+ "esp-build",
  "esp-config",
  "esp-hal-procmacros",
  "esp-metadata",
@@ -500,7 +489,7 @@ dependencies = [
  "embassy-time",
  "embassy-time-driver",
  "embassy-time-queue-utils",
- "esp-build 0.2.0",
+ "esp-build",
  "esp-config",
  "esp-hal",
  "esp-hal-procmacros",
@@ -544,7 +533,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "960703930f9f3c899ddedd122ea27a09d6a612c22323157e524af5b18876448e"
 dependencies = [
  "critical-section",
- "esp-build 0.2.0",
+ "esp-build",
  "log",
  "portable-atomic",
 ]
@@ -562,13 +551,13 @@ dependencies = [
 
 [[package]]
 name = "esp-storage"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "661aebceb62e0caadd7e6bddd88b2d891c3b08cea4eb5afe96ef697674ccda5c"
+checksum = "1e98b5069bd1482fb85f9236f8ea6cd1b5b6b5a1c3c3fb8c938c97ccfbbb051b"
 dependencies = [
  "critical-section",
  "embedded-storage",
- "esp-build 0.1.0",
+ "esp-build",
 ]
 
 [[package]]
@@ -586,7 +575,7 @@ dependencies = [
  "embedded-io-async",
  "enumset",
  "esp-alloc",
- "esp-build 0.2.0",
+ "esp-build",
  "esp-config",
  "esp-hal",
  "esp-metadata",
@@ -600,7 +589,6 @@ dependencies = [
  "portable-atomic",
  "portable_atomic_enum",
  "rand_core",
- "smoltcp",
 ]
 
 [[package]]
@@ -1041,18 +1029,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "sl1"
+name = "sl1-firmware"
 version = "0.1.0"
 dependencies = [
- "critical-section",
  "dotenv-build",
  "embassy-executor",
  "embassy-net",
  "embassy-sync",
  "embassy-time",
- "embedded-hal 1.0.0",
- "embedded-io",
- "embedded-io-async",
  "embedded-storage",
  "esp-alloc",
  "esp-backtrace",
@@ -1066,7 +1050,6 @@ dependencies = [
  "serde",
  "serde_json",
  "smart-leds-trait",
- "smoltcp",
  "static_cell",
  "ws2812-spi",
 ]

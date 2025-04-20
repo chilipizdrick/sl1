@@ -3,7 +3,7 @@ use embedded_storage::{ReadStorage, Storage};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Error, Result, PRESET_COUNT, SETTINGS_STORAGE_OFFSET, STORAGE, WIFI_PASSWORD, WIFI_SSID,
+    Error, PRESET_COUNT, Result, SETTINGS_STORAGE_OFFSET, STORAGE, WIFI_PASSWORD, WIFI_SSID,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,5 +139,5 @@ impl core::fmt::Display for PresetId {
 }
 
 unsafe fn as_u8_slice<T: Sized>(p: &T) -> &[u8] {
-    core::slice::from_raw_parts((p as *const T) as *const u8, core::mem::size_of::<T>())
+    unsafe { core::slice::from_raw_parts((p as *const T) as *const u8, core::mem::size_of::<T>()) }
 }

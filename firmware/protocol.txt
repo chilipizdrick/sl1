@@ -9,13 +9,4 @@ Methods are described in code (server.rs), as of now there are 16 of them
 
 Value is at most 512 bytes in length (whole device state takes approx. 300 bytes
 to be sent as a UTF-8 string, so 512 bytes should be more than enough in the
-nearest future). Value max size may grow considerably after adding more effects
-because preset settings are sent over in the following way:
-
-{
-  "brightness": 128,
-  "speed": 128,
-  "scale": 128
-}
-
-...which is totally overkill, to say the least.
+nearest future).
