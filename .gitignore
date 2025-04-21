@@ -19,3 +19,5 @@
 **/.envrc
 **/.direnv/
 **/.env
+
+target/rust-toolchain.toml
