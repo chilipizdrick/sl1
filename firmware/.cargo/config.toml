@@ -5,7 +5,7 @@ runner = "espflash flash --baud=921600 --monitor --partition-table ./partition-t
 runner = "espflash flash --baud=921600 --monitor --partition-table ./partition-table.csv"
 
 [env]
-ESP_LOG="TRACE"
+ESP_LOG="INFO"
 
 [build]
 rustflags = [

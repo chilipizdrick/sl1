@@ -24,7 +24,7 @@ use esp_hal::{
 use esp_storage::FlashStorage;
 use esp_wifi::{
     EspWifiController,
-    wifi::{ClientConfiguration, WifiController, WifiDevice, WifiStaDevice, new_with_config},
+    wifi::{ClientConfiguration, WifiDevice, WifiStaDevice, new_with_config},
 };
 use settings::init_settings_storage;
 use static_cell::StaticCell;
@@ -85,7 +85,7 @@ async fn main(spawner: Spawner) -> ! {
     };
 
     log::info!("Error here!");
-    let (device, controller): (WifiDevice<'_, WifiStaDevice>, WifiController<'_>) =
+    let (device, controller): (WifiDevice<'_, WifiStaDevice>, _) =
         new_with_config(wifi_controller, peripherals.WIFI, sta_config).unwrap();
     log::info!("Error passed!");
 

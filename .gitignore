@@ -20,4 +20,4 @@
 **/.direnv/
 **/.env
 
-target/rust-toolchain.toml
+firmware/rust-toolchain.toml
