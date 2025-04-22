@@ -6,12 +6,11 @@ mod static_color;
 mod utils;
 
 use core::sync::atomic::Ordering;
-use embassy_time::{Duration, Timer};
+use embassy_time::Timer;
 use smart_leds_trait::SmartLedsWrite;
 
 use crate::{
-    FRAME_TIME_MS, LED_COUNT, LedsAdapter, Result, SETTINGS, SHOULD_UPDATE,
-    settings::PresetSettings,
+    FRAME_TIME, LED_COUNT, LedsAdapter, Result, SETTINGS, SHOULD_UPDATE, settings::PresetSettings,
 };
 
 trait Preset {
@@ -28,7 +27,7 @@ pub async fn run_renderer(mut leds: LedsAdapter) -> ! {
                 if SHOULD_UPDATE.load(Ordering::Relaxed) {
                     break;
                 }
-                Timer::after(Duration::from_millis(FRAME_TIME_MS)).await;
+                Timer::after(FRAME_TIME).await;
             }
             continue;
         }
@@ -46,11 +45,8 @@ pub async fn run_renderer(mut leds: LedsAdapter) -> ! {
             _ => unreachable!(),
         };
 
-        match res {
-            Ok(_) => {}
-            Err(e) => {
-                log::error!("{e}")
-            }
+        if let Err(err) = res {
+            log::error!("{err}");
         }
     }
 }

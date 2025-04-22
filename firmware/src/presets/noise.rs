@@ -1,3 +1,5 @@
+// The implementation of Perlin noise is taken from the aurduino FastLED library
+
 use crate::presets::utils::{fade_u8, grad_u8, lerp_i8};
 
 pub struct PerlinNoise {

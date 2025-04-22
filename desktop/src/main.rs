@@ -30,8 +30,8 @@ use crate::{
     device::{Device, DeviceSettings, Preset},
 };
 
-const POLL_INTERVAL: Duration = Duration::from_secs(1);
-const DISCONNECT_INTERVAL: Duration = Duration::from_secs(3);
+const POLL_INTERVAL: Duration = Duration::from_secs(3);
+const DISCONNECT_INTERVAL: Duration = Duration::from_secs(5);
 
 fn main() -> iced::Result {
     tracing_subscriber::fmt::init();
@@ -171,6 +171,7 @@ impl App {
     }
 
     fn handle_request_message(&mut self, message: Request) -> Task<Message> {
+        log::info!("Processing request: {:?}", &message);
         if let Some(sender) = &mut self.sender {
             if let Err(err) = sender.try_send(message.clone()) {
                 log::error!("Error sending message: {err}");

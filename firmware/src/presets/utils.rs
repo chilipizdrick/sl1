@@ -1,6 +1,5 @@
 pub fn scale_u8(i: u8, scale: u8) -> u8 {
     ((i as u16 * scale as u16) >> 8) as u8
-    // ((i as u16 * (scale as u16 + 1)) >> 8) as u8
 }
 
 pub fn lerp_i8(a: i8, b: i8, frac: u8) -> i8 {
@@ -36,11 +35,9 @@ pub fn grad_u8(hash: u8, x: i8, y: i8) -> i8 {
     }
 
     if hash & 1 > 0 {
-        // u = -(if u == i8::MIN { u + 1 } else { u });
         u = u.wrapping_neg();
     }
     if hash & 2 > 0 {
-        // v = -(if v == i8::MIN { v + 1 } else { v });
         v = v.wrapping_neg();
     }
 
@@ -49,7 +46,6 @@ pub fn grad_u8(hash: u8, x: i8, y: i8) -> i8 {
 
 pub fn fade_u8(x: u8) -> u8 {
     scale_u8(x, x)
-    // scale_u8(x, x) >> 4
 }
 
 pub fn lerp_color(a: &[u8; 3], b: &[u8; 3], frac: u8) -> [u8; 3] {
