@@ -3,7 +3,6 @@
   rustPlatform,
   makeDesktopItem,
   copyDesktopItems,
-  makeWrapper,
   pkg-config,
   wayland,
   libxkbcommon,
@@ -11,7 +10,7 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "sl1-desktop";
-  name = "sl1-desktop";
+  name = pname;
   version = "0.1.0";
   cargoLock.lockFile = ./Cargo.lock;
   src = lib.cleanSource ./.;
