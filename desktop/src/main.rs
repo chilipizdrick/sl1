@@ -30,8 +30,8 @@ use crate::{
     device::{Device, DeviceSettings, Preset},
 };
 
-const POLL_INTERVAL: Duration = Duration::from_secs(3);
-const DISCONNECT_INTERVAL: Duration = Duration::from_secs(5);
+const DEVICE_POLL_INTERVAL: Duration = Duration::from_secs(3);
+const DEVICE_DISCONNECT_INTERVAL: Duration = Duration::from_secs(5);
 
 fn main() -> iced::Result {
     tracing_subscriber::fmt::init();
@@ -96,7 +96,7 @@ impl App {
             theme,
             page: Page::Home,
 
-            last_handshake: Instant::now() - DISCONNECT_INTERVAL,
+            last_handshake: Instant::now() - DEVICE_DISCONNECT_INTERVAL,
             is_device_connected: false,
             is_on: false,
             brightness: 128,
@@ -124,7 +124,7 @@ impl App {
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
-        self.is_device_connected = self.last_handshake.elapsed() < DISCONNECT_INTERVAL;
+        self.is_device_connected = self.last_handshake.elapsed() < DEVICE_DISCONNECT_INTERVAL;
 
         match message {
             Message::Page(page) => self.handle_page(page),
@@ -149,7 +149,7 @@ impl App {
     fn subscription(&self) -> Subscription<Message> {
         Subscription::batch([
             Subscription::run(connection_worker).map(Message::Response),
-            iced::time::every(POLL_INTERVAL)
+            iced::time::every(DEVICE_POLL_INTERVAL)
                 .map(|_| Message::Request(Request::Get(GetRequest::Ping))),
         ])
     }
@@ -625,45 +625,36 @@ impl App {
 
     fn slider_controls(&self) -> Element<Message> {
         column![
-            row![
-                text!("Brightness:"),
-                slider(0..=255, self.brightness, |val| {
-                    Message::UI(UIMessage::Brightness(val))
-                })
-                .on_release(Message::Request(Request::Set(
-                    SetRequest::Brightness(self.brightness)
-                ))),
-                text!("{}", self.brightness).width(40),
-            ]
-            .padding(5)
-            .spacing(20),
-            row![
-                text!("Speed:"),
-                slider(0..=255, self.speed, |val| {
-                    Message::UI(UIMessage::Speed(val))
-                })
-                .on_release(Message::Request(Request::Set(SetRequest::Speed(
-                    self.speed
-                )))),
-                text!("{}", self.speed).width(40),
-            ]
-            .padding(5)
-            .spacing(20),
-            row![
-                text!("Scale:"),
-                slider(0..=255, self.scale, |val| {
-                    Message::UI(UIMessage::Scale(val))
-                })
-                .on_release(Message::Request(Request::Set(SetRequest::Scale(
-                    self.scale
-                )))),
-                text!("{}", self.scale).width(40),
-            ]
-            .padding(5)
-            .spacing(20),
+            self.brightness_slider(),
+            self.speed_slider(),
+            self.scale_slider(),
         ]
         .padding(5)
         .into()
+    }
+
+    fn brightness_slider(&self) -> Element<Message> {
+        let brightness = self.brightness;
+        SliderBuilder::new("Brightness:", brightness)
+            .on_change(|val| Message::UI(UIMessage::Brightness(val)))
+            .on_release(move |_| Message::Request(Request::Set(SetRequest::Brightness(brightness))))
+            .build()
+    }
+
+    fn speed_slider(&self) -> Element<Message> {
+        let speed = self.speed;
+        SliderBuilder::new("Speed:", self.speed)
+            .on_change(|val| Message::UI(UIMessage::Speed(val)))
+            .on_release(move |_| Message::Request(Request::Set(SetRequest::Speed(speed))))
+            .build()
+    }
+
+    fn scale_slider(&self) -> Element<Message> {
+        let scale = self.scale;
+        SliderBuilder::new("Scale:", self.scale)
+            .on_change(|val| Message::UI(UIMessage::Scale(val)))
+            .on_release(move |_| Message::Request(Request::Set(SetRequest::Scale(scale))))
+            .build()
     }
 
     fn device_connection_state(&self) -> Element<Message> {
@@ -773,5 +764,53 @@ impl std::fmt::Display for PresetInfoMessage {
             PresetInfoMessage::PresetInfoLoaded => "Preset info loaded!",
         };
         write!(f, "{msg}")
+    }
+}
+
+struct SliderBuilder {
+    label: String,
+    value: u8,
+    on_change: Box<dyn Fn(u8) -> Message>,
+    on_release: Box<dyn Fn(u8) -> Message>,
+}
+
+impl SliderBuilder {
+    fn new(label: &str, value: u8) -> Self {
+        Self {
+            label: label.to_string(),
+            value,
+            on_change: Box::new(|_| Message::UI(UIMessage::Brightness(0))),
+            on_release: Box::new(|_| Message::Request(Request::Set(SetRequest::Brightness(0)))),
+        }
+    }
+
+    fn on_change<F>(mut self, f: F) -> Self
+    where
+        F: Fn(u8) -> Message + 'static,
+    {
+        self.on_change = Box::new(f);
+        self
+    }
+
+    fn on_release<F>(mut self, f: F) -> Self
+    where
+        F: Fn(u8) -> Message + 'static,
+    {
+        self.on_release = Box::new(f);
+        self
+    }
+
+    fn build(self) -> Element<'static, Message> {
+        let on_change = self.on_change;
+        let on_release = self.on_release;
+        row![
+            text(self.label),
+            slider(0..=255, self.value, move |val| on_change(val))
+                .on_release(on_release(self.value)),
+            text!("{}", self.value).width(40),
+        ]
+        .padding(5)
+        .spacing(20)
+        .into()
     }
 }

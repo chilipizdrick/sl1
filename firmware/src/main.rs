@@ -84,10 +84,8 @@ async fn main(spawner: Spawner) -> ! {
         ..Default::default()
     };
 
-    log::info!("Error here!");
     let (device, controller): (WifiDevice<'_, WifiStaDevice>, _) =
         new_with_config(wifi_controller, peripherals.WIFI, sta_config).unwrap();
-    log::info!("Error passed!");
 
     let dhcp_config = embassy_net::DhcpConfig::default();
     let net_config = embassy_net::Config::dhcpv4(dhcp_config);

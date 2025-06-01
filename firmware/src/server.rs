@@ -371,8 +371,6 @@ pub async fn server_task(stack: Stack<'static>) -> ! {
             }
         };
 
-        log::debug!("Request: {:?}", &request);
-
         let response = ServerMessage::from_client_message(request).await;
 
         response

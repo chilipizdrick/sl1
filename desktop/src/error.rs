@@ -13,12 +13,11 @@ pub enum Error {
     PortParse(std::num::ParseIntError),
     SerializeToml(toml::ser::Error),
     SerializeJson(serde_json::Error),
-    Timeout(tokio::time::error::Elapsed),
+    FutureTimeout,
     UdpConnect(std::io::Error),
     UdpRecv(std::io::Error),
     UdpSend(std::io::Error),
     UnknownResponseMethod,
-    SemaphorAcquire(tokio::sync::AcquireError),
     IpNetworkParse(ipnetwork::IpNetworkError),
 }
 

@@ -15,7 +15,7 @@ pub async fn wifi_task(mut controller: WifiController<'static>) -> ! {
             }
 
             Err(err) => {
-                log::error!(target: "WIFI", "Error connecting to wifi network: {err}.\nReconnecting...");
+                log::error!(target: "WIFI", "Error connecting to wifi network: {err:?}.\nReconnecting...");
                 Timer::after(Duration::from_millis(5000)).await;
             }
         };

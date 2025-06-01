@@ -1,10 +1,11 @@
 use ipnetwork::IpNetwork;
+use smol::{lock::Semaphore, net::UdpSocket};
+use smol_timeout::TimeoutExt;
 use std::{
     net::{IpAddr, SocketAddr},
     sync::Arc,
     time::Duration,
 };
-use tokio::{net::UdpSocket, sync::Semaphore, time};
 
 use crate::{Error, Result, config, device::Device};
 
@@ -34,9 +35,10 @@ impl DeviceDetector {
     }
 
     pub async fn run_with_timeout(self, timeout: Duration) -> Result<Vec<Device>> {
-        time::timeout(timeout, self.run())
+        self.run()
+            .timeout(timeout)
             .await
-            .map_err(Error::Timeout)?
+            .ok_or(Error::FutureTimeout)?
     }
 
     pub async fn run(self) -> Result<Vec<Device>> {
@@ -60,32 +62,26 @@ impl DeviceDetector {
     }
 
     async fn detector_worker(&self, sem: Arc<Semaphore>, ip: IpAddr) -> (IpAddr, bool) {
-        match sem.acquire().await.map_err(Error::SemaphorAcquire) {
-            Ok(_permit) => {
-                let addr = SocketAddr::new(ip, self.port);
-                let open = Self::detect_device(&self.send_buf, addr, self.recv_timeout)
-                    .await
-                    .unwrap_or(false);
-                (ip, open)
-            }
-            Err(err) => {
-                log::error!("{err}");
-                (ip, false)
-            }
-        }
+        let _permit = sem.acquire().await;
+        let addr = SocketAddr::new(ip, self.port);
+        let open = Self::detect_device(&self.send_buf, addr, self.recv_timeout)
+            .await
+            .unwrap_or(false);
+        (ip, open)
     }
 
     async fn detect_device(send_buf: &[u8], addr: SocketAddr, timeout: Duration) -> Result<bool> {
-        log::debug!("Checking ip: {}", &addr);
         let socket = UdpSocket::bind("0.0.0.0:0")
             .await
             .map_err(Error::UdpConnect)?;
         socket.connect(addr).await.map_err(Error::UdpConnect)?;
         let mut recv_buf = [0u8; 8];
         socket.send(send_buf).await.map_err(Error::UdpSend)?;
-        let size = time::timeout(timeout, socket.recv(&mut recv_buf))
+        let size = socket
+            .recv(&mut recv_buf)
+            .timeout(timeout)
             .await
-            .map_err(Error::Timeout)?
+            .ok_or(Error::FutureTimeout)?
             .map_err(Error::UdpRecv)?;
         let requirements = [size >= 2, recv_buf[0] == 0x01, recv_buf[1] == 0x01];
         if requirements.iter().all(|p| *p) {

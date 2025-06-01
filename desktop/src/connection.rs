@@ -2,8 +2,9 @@ use iced::{
     futures::{Stream, StreamExt, channel::mpsc, sink::SinkExt},
     stream,
 };
+use smol::net::UdpSocket;
+use smol_timeout::TimeoutExt;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
-use tokio::net::UdpSocket;
 
 use crate::{
     Error, Result,
@@ -130,7 +131,6 @@ impl Sender {
     }
 
     async fn handle_request(&mut self, request: Request) -> Result<()> {
-        log::debug!("{:?}", &request);
         match request {
             Request::SetDeviceAddr(addr) => {
                 self.set_device_addr(addr).await;
@@ -194,9 +194,10 @@ impl Sender {
     }
 
     async fn send_with_timeout(&self, msg_len: usize) -> Result<()> {
-        tokio::time::timeout(Duration::from_millis(500), self.send(msg_len))
+        self.send(msg_len)
+            .timeout(Duration::from_millis(500))
             .await
-            .map_err(Error::Timeout)??;
+            .ok_or(Error::FutureTimeout)??;
         Ok(())
     }
 
@@ -343,14 +344,18 @@ pub fn connection_worker() -> impl Stream<Item = Response> {
         );
 
         let reciever = Reciever::new(Arc::clone(&socket));
-        tokio::spawn(recv_worker(reciever, output));
+        let recv_task = smol::spawn(recv_worker(reciever, output));
 
         let mut sender = Sender::new(socket);
-        loop {
-            let request = rx.select_next_some().await;
-            if let Err(err) = sender.handle_request(request).await {
-                log::error!("{err}");
+        let send_task = smol::spawn(async move {
+            loop {
+                let request = rx.select_next_some().await;
+                if let Err(err) = sender.handle_request(request).await {
+                    log::error!("{err}");
+                }
             }
-        }
+        });
+
+        futures::future::join(recv_task, send_task).await;
     })
 }
