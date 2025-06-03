@@ -1,7 +1,7 @@
 use embassy_time::Duration;
 
 pub const PRESET_COUNT: u8 = 4;
-pub const LED_COUNT: usize = 18;
+pub const LED_COUNT: usize = 79;
 pub const LEDS_DATA_BUFFER_SIZE: usize = 12 * LED_COUNT + 40;
 pub const FRAME_TIME: Duration = Duration::from_millis(20);
 pub const RANDOM_SEED: u64 = 0x0123_4567_89ab_cdef;

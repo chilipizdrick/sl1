@@ -5,7 +5,7 @@ version = "0.1.0"
 rust-version = "1.85.0"
 
 [features]
-default = ["esp32c3"]
+default = ["esp32"]
 esp32 = [
   "esp-hal/esp32",
   "esp-storage/esp32",

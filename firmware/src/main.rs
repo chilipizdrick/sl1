@@ -78,14 +78,20 @@ async fn main(spawner: Spawner) -> ! {
         .unwrap(),
     );
 
+    log::info!("1");
+
     let sta_config = ClientConfiguration {
         ssid: heapless::String::from_str(WIFI_SSID).unwrap(),
         password: heapless::String::from_str(WIFI_PASSWORD).unwrap(),
         ..Default::default()
     };
 
+    log::info!("2");
+
     let (device, controller): (WifiDevice<'_, WifiStaDevice>, _) =
         new_with_config(wifi_controller, peripherals.WIFI, sta_config).unwrap();
+
+    log::info!("3");
 
     let dhcp_config = embassy_net::DhcpConfig::default();
     let net_config = embassy_net::Config::dhcpv4(dhcp_config);
@@ -96,6 +102,8 @@ async fn main(spawner: Spawner) -> ! {
         RESOURCES.init(StackResources::<4>::new()),
         RANDOM_SEED,
     );
+
+    log::info!("4");
 
     static LED_BUF: StaticCell<[u8; LEDS_DATA_BUFFER_SIZE]> = StaticCell::new();
     let led_buf = LED_BUF.init([0; LEDS_DATA_BUFFER_SIZE]);
